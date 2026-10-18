@@ -1,0 +1,18 @@
+const a=require('node:assert/strict'),E=require('./engine.js');let n=0;const test=(name,fn)=>{fn();console.log('PASS '+name);n++;};
+test('twelve playable gardens have three flowers',()=>{a.equal(E.levels.length,12);for(let i=0;i<12;i++)a.equal(E.create(i).flowers.length,3);});
+test('invalid stage clamps to available gardens',()=>{a.equal(E.create(100).index,11);a.equal(E.create(-5).index,0);});
+test('short strokes and malformed points rejected',()=>{let s=E.create();a.equal(E.addPath(s,[{x:2,y:3}]),false);a.equal(E.addPath(s,[{x:NaN,y:4},{x:3,y:7}]),false);a.equal(E.addPath(s,[{x:20,y:120},{x:22,y:121}]),false);});
+test('path clipped to drawing area and ink budget',()=>{let s=E.create();a(E.addPath(s,[{x:-100,y:0},{x:500,y:700},{x:-100,y:0},{x:500,y:700}]));let p=s.paths[0];a(E.length(p.points)<=650.01);for(const q of p.points){a(q.x>=8&&q.x<=352&&q.y>=105&&q.y<=430);}});
+test('fifth path replaces oldest',()=>{let s=E.create();for(let i=0;i<5;i++)E.addPath(s,[{x:20,y:120+i*20},{x:80,y:140+i*20}]);a.equal(s.paths.length,4);a.equal(s.drawn,5);});
+test('paths expire after twelve active seconds',()=>{let s=E.create();E.addPath(s,[{x:20,y:150},{x:80,y:170}]);for(let i=0;i<121;i++)E.step(s,.1);a.equal(s.paths.length,0);});
+test('vertical rain is caught and slides toward lower endpoint',()=>{let s=E.create();s.spawn=999;E.addPath(s,[{x:70,y:180},{x:250,y:280}]);let d=E.spawn(s,150,130),caught=false;for(let i=0;i<100;i++){E.step(s,.03);if(d.route)caught=true;}a(caught);a(d.x>180);});
+test('reversing drawn order does not reverse downhill travel',()=>{let s=E.create();s.spawn=999;E.addPath(s,[{x:250,y:280},{x:70,y:180}]);let d=E.spawn(s,150,130);for(let i=0;i<100;i++)E.step(s,.03);a(d.x>180);});
+test('path can deliver rain to a flower',()=>{let s=E.create();s.spawn=999;E.addPath(s,[{x:220,y:150},{x:65,y:415}]);E.spawn(s,180,110);for(let i=0;i<100;i++)E.step(s,.05);a.equal(s.flowers[0].water,1);a.equal(s.delivered,1);});
+test('rain fills bloom but not beyond required water',()=>{let s=E.create();s.spawn=999;for(let i=0;i<6;i++)E.spawn(s,65,430);for(let i=0;i<20;i++)E.step(s,.05);a.equal(s.flowers[0].water,2);a.equal(s.delivered,2);a.equal(s.events.filter(e=>e.type==='bloom').length,1);});
+test('all flowers blooming wins and awards stars',()=>{let s=E.create();s.spawn=999;for(const f of s.flowers)for(let i=0;i<f.need;i++)E.spawn(s,f.x,430);for(let i=0;i<20;i++)E.step(s,.05);a.equal(s.phase,'won');a.equal(E.stars(s),3);const time=s.time;E.step(s,1);a.equal(s.time,time);});
+test('misses lower stars but never block completion',()=>{let s=E.create();s.phase='won';s.missed=10;a.equal(E.stars(s),2);s.missed=10000;a.equal(E.stars(s),1);});
+test('expired paths release sliding drops',()=>{let s=E.create();s.spawn=999;E.addPath(s,[{x:30,y:170},{x:300,y:240}]);let p=s.paths[0],d=E.spawn(s,100,180);d.route={id:p.id,i:0,u:.2,dir:1};p.life=.001;E.step(s,.02);a.equal(d.route,null);a(d.vy>0);});
+test('rock diverts rain instead of trapping it',()=>{let s=E.create(6);s.spawn=999;let d=E.spawn(s,170,240);for(let i=0;i<25;i++)E.step(s,.03);a(d.x<135||d.x>225);});
+test('finite and bounded simulation over long idle session',()=>{let s=E.create(11);for(let i=0;i<3000;i++)E.step(s,.1);a(s.drops.length<=48);for(const d of s.drops)a(Number.isFinite(d.x)&&Number.isFinite(d.y));a(s.events.length<2000);});
+test('invalid delta does not advance game',()=>{let s=E.create();E.step(s,NaN);E.step(s,-1);a.equal(s.time,0);});
+console.log(n+' gameplay checks passed');

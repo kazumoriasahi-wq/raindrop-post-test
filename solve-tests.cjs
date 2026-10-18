@@ -1,0 +1,2 @@
+const a=require('node:assert/strict'),E=require('./engine.js');
+for(let level=0;level<12;level++){const s=E.create(level);for(const f of s.flowers){let tries=0;while(f.water<f.need&&tries++<6){s.paths=[];const x=s.clouds[0];E.addPath(s,[{x:x-35,y:125},{x:x+35,y:135},{x:f.x,y:420}]);for(let i=0;i<110&&f.water<f.need;i++)E.step(s,.1);}a.equal(f.water,f.need,'garden '+(level+1)+' flower '+f.x);}a.equal(s.phase,'won');console.log('PASS garden '+(level+1)+' solvable using player-drawn paths');}
