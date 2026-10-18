@@ -1,0 +1,4 @@
+const frame=document.getElementById('gameFrame'),log=document.getElementById('log');let n=0,language='ja';
+document.getElementById('controls').addEventListener('click',e=>{if(e.target.dataset.language){language=e.target.dataset.language;frame.src='mock-sandbox.html?language='+language+'&reload='+Date.now();return;}const command=e.target.dataset.command;if(command)frame.contentWindow.postMessage({command},location.origin);});
+document.getElementById('reload').onclick=()=>{frame.src='mock-sandbox.html?language='+language+'&reload='+Date.now();};
+addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.source!=='rain-mock')return;const item=event.data;log.textContent=(++n)+'. '+item.type+(item.detail===undefined?'':' '+item.detail)+'\n'+log.textContent;});
